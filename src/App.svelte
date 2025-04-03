@@ -2,6 +2,7 @@
   import XmlTextPane from "./lib/XmlTextPane.svelte";
   import DiffTree from "./lib/DiffTree.svelte";
   import * as xdiffer from "libxdiffer";
+  import { appliedEdits } from "./lib/shared.svelte";
 
   let xml1 = $state("");
   let xml2 = $state("");
@@ -27,13 +28,36 @@
 
 <main>
   <div class="text-input-section">
-    <XmlTextPane name="XML 1" bind:value={xml1} edit={editState} range={range1} />
-    <XmlTextPane name="XML 2" bind:value={xml2} edit={editState} range={range2} />
+    <XmlTextPane
+      name="XML 1"
+      bind:value={xml1}
+      edit={editState}
+      range={range1}
+    />
+    <XmlTextPane
+      name="XML 2"
+      bind:value={xml2}
+      edit={editState}
+      range={range2}
+    />
   </div>
   <div class="btn-container">
     <button onclick={onBtnClick}
       >{#if editState}Compare{:else}Back{/if}</button
     >
+    {#if !editState}<button
+        onclick={() => {
+          const merged_xml = xdiffer.apply_changes(xml1, xml2, [
+            ...appliedEdits.values().map((c) => c.copy()), // creating copy to avoid moving the original value
+          ]);
+          const link = document.createElement("a");
+          const file = new Blob([merged_xml], { type: "application/xml" });
+          link.href = URL.createObjectURL(file);
+          link.download = "merged.xml";
+          link.click();
+          URL.revokeObjectURL(link.href);
+        }}>Merge</button
+      >{/if}
   </div>
   {#if !editState}
     <div>

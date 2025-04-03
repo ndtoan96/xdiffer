@@ -1,6 +1,7 @@
 <script lang="ts">
     import * as xdiffer from "libxdiffer";
     import Self from "./DiffNode.svelte";
+    import { appliedEdits } from "./shared.svelte";
 
     interface Props {
         value: xdiffer.DiffNode;
@@ -9,6 +10,7 @@
     }
 
     let { value, set_range1, set_range2 }: Props = $props();
+    let applied = $state(false);
     const nodeKindMap = {
         [xdiffer.DiffNodeKind.AddedNode]: "added_node",
         [xdiffer.DiffNodeKind.AddedSubNode]: "added_subnode",
@@ -21,24 +23,43 @@
 
 <div class="tree">
     <div class="tree-node">
-        <span class={nodeKindMap[value.kind()]}><b>{value.name()}</b>
-        {#if value.range1() || value.range2()}
-        <button onclick={() => {
-            set_range1(value.range1());
-            set_range2(value.range2());
-        }}>Locate</button>
-        {/if}
-        {#if value.kind() === xdiffer.DiffNodeKind.UpdatedNode || value.kind() === xdiffer.DiffNodeKind.DeletedNode || value.kind() === xdiffer.DiffNodeKind.AddedNode}
-        <button>Apply</button>
-        {/if}
-        <!-- <button>Apply</button></span> -->
-        <ul>
-            {#each value.children() as child (child)}
-                <li>
-                    <Self value={child} set_range1={set_range1} set_range2={set_range2} />
-                </li>
-            {/each}
-        </ul>
+        <span class={nodeKindMap[value.kind()]}
+            ><b>{value.name()}</b>
+            {#if value.range1() || value.range2()}
+                <button
+                    onclick={() => {
+                        set_range1(value.range1());
+                        set_range2(value.range2());
+                    }}>Locate</button
+                >
+            {/if}
+            {#if value.kind() === xdiffer.DiffNodeKind.UpdatedNode || value.kind() === xdiffer.DiffNodeKind.DeletedNode || value.kind() === xdiffer.DiffNodeKind.AddedNode}
+                <button
+                    onclick={() => {
+                        if (applied) {
+                            appliedEdits.delete(
+                                `${value.range1()}|${value.range2()}`
+                            );
+                        } else {
+                            appliedEdits.set(
+                                `${value.range1()}|${value.range2()}`,
+                                new xdiffer.Change(value.range1(), value.range2(), value.insert_pos(), value.is_attribute()),
+                            );
+                        }
+                        applied = !applied;
+                    }}
+                    >{#if applied}Revert{:else}Apply{/if}</button
+                >
+            {/if}
+            <!-- <button>Apply</button></span> -->
+            <ul>
+                {#each value.children() as child (child)}
+                    <li>
+                        <Self value={child} {set_range1} {set_range2} />
+                    </li>
+                {/each}
+            </ul>
+        </span>
     </div>
 </div>
 
@@ -72,7 +93,7 @@
 
     /* Connector line for child nodes */
     .tree-node li::before {
-        content: '';
+        content: "";
         position: absolute;
         left: -10px;
         top: 10px;
@@ -82,12 +103,14 @@
     }
 
     /* Styling for different node types */
-    .added_node, .added_subnode {
+    .added_node,
+    .added_subnode {
         color: green;
         font-weight: bold;
     }
 
-    .deleted_node, .deleted_subnode {
+    .deleted_node,
+    .deleted_subnode {
         color: red;
         font-weight: bold;
     }

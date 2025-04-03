@@ -7,6 +7,13 @@ use x_diff_rs::{
     tree::{XNode, XTree},
 };
 
+#[cfg(debug_assertions)]
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(js_namespace = console)]
+    fn log(text: &str);
+}
+
 #[derive(Debug, Clone)]
 #[wasm_bindgen]
 pub struct DiffTree {
@@ -29,7 +36,9 @@ pub struct DiffNode {
     range1: Option<Range>,
     range2: Option<Range>,
     kind: DiffNodeKind,
+    insert_pos: Option<usize>,
     children: Vec<DiffNode>,
+    is_attribute: bool,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -98,9 +107,114 @@ impl DiffNode {
     pub fn children(&self) -> Vec<DiffNode> {
         self.children.clone()
     }
+
+    #[wasm_bindgen]
+    pub fn insert_pos(&self) -> Option<usize> {
+        self.insert_pos
+    }
+
+    #[wasm_bindgen]
+    pub fn is_attribute(&self) -> bool {
+        self.is_attribute
+    }
 }
 
 #[wasm_bindgen]
+#[derive(Debug, Clone, Copy)]
+pub struct Change {
+    pub range1: Option<Range>,
+    pub range2: Option<Range>,
+    pub insert_pos: Option<usize>,
+    pub is_attribute: bool,
+}
+
+#[wasm_bindgen]
+impl Change {
+    #[wasm_bindgen(constructor)]
+    pub fn new(
+        range1: Option<Range>,
+        range2: Option<Range>,
+        insert_pos: Option<usize>,
+        is_attribute: bool,
+    ) -> Self {
+        Self {
+            range1,
+            range2,
+            insert_pos,
+            is_attribute,
+        }
+    }
+
+    #[wasm_bindgen]
+    pub fn copy(&self) -> Self {
+        *self
+    }
+}
+
+#[wasm_bindgen]
+pub fn apply_changes(text1: &str, text2: &str, mut changes: Vec<Change>) -> String {
+    // Adjust insert position for attribute nodes
+    for change in &mut changes {
+        if change.range1.is_none() && change.range2.is_some() && change.is_attribute {
+            let pos = change.insert_pos.unwrap();
+            let mut new_insert_pos = pos + text1[pos..text1.len()].find('>').unwrap();
+            if &text1[new_insert_pos - 1..new_insert_pos] == "/" {
+                new_insert_pos -= 1;
+            }
+            change.insert_pos = Some(new_insert_pos);
+        }
+    }
+    changes.sort_by_key(|change| {
+        std::cmp::Reverse(
+            change
+                .range1
+                .map(|r| r.start)
+                .or(change.insert_pos)
+                .unwrap_or(0),
+        )
+    });
+    let mut final_text = text1.to_string();
+    for change in &changes {
+        final_text = match (change.range1, change.range2, change.insert_pos) {
+            (None, Some(r2), Some(pos)) => {
+                let prefix_space = if change.is_attribute
+                    && (text1[pos - 1..pos].find([' ', '\t', '\r', '\n']).is_none())
+                {
+                    " "
+                } else {
+                    ""
+                };
+                let suffix_space = if change.is_attribute && (&text1[pos..pos + 1] == "/") {
+                    " "
+                } else {
+                    ""
+                };
+                format!(
+                    "{head}{prefix_space}{insert}{suffix_space}{tail}",
+                    head=&final_text[0..pos],
+                    insert=&text2[r2.start..r2.end].trim(),
+                    tail=&final_text[pos..final_text.len()]
+                )
+            }
+            (Some(r1), None, None) => format!(
+                "{}{}",
+                &final_text[0..r1.start],
+                &final_text[r1.end..final_text.len()]
+            ),
+            (Some(r1), Some(r2), None) => format!(
+                "{}{}{}",
+                &final_text[0..r1.start],
+                &text2[r2.start..r2.end],
+                &final_text[r1.end..final_text.len()]
+            ),
+            _ => unreachable!(),
+        };
+    }
+    final_text
+}
+
+#[wasm_bindgen]
+#[derive(Debug, Clone)]
 pub struct SplittedText {
     head: String,
     middle: String,
@@ -183,6 +297,7 @@ pub fn build_diff_tree(xml1: &str, xml2: &str) -> Result<DiffTree, String> {
             tree1.root(),
             &changed_nodes,
             DiffNodeKind::NoDiff,
+            None,
         )),
     })
 }
@@ -191,6 +306,7 @@ fn build_diff_node(
     node: XNode,
     changed_nodes: &HashMap<String, Vec<Edit>>,
     kind: DiffNodeKind,
+    insert_pos: Option<usize>,
 ) -> DiffNode {
     let name = match node.name() {
         x_diff_rs::tree::XNodeName::TagName(expanded_name) => format!("<{}>", expanded_name.name()),
@@ -217,6 +333,7 @@ fn build_diff_node(
                                 c,
                                 changed_nodes,
                                 DiffNodeKind::DeletedSubNode,
+                                None,
                             ));
                         }
                         return DiffNode {
@@ -224,7 +341,9 @@ fn build_diff_node(
                             range1: Some(Range::from(xnode.range())),
                             range2: None,
                             kind: DiffNodeKind::DeletedNode,
+                            insert_pos: None,
                             children: subnodes,
+                            is_attribute: xnode.is_attribute(),
                         };
                     }
                     Edit::Update { old, new } => {
@@ -233,18 +352,32 @@ fn build_diff_node(
                             range1: Some(Range::from(old.range())),
                             range2: Some(Range::from(new.range())),
                             kind: DiffNodeKind::UpdatedNode,
+                            insert_pos: None,
                             children: Vec::new(),
+                            is_attribute: old.is_attribute(),
                         };
                     }
                     Edit::ReplaceRoot => unreachable!(),
                 }
             }
             let mut subnodes = Vec::new();
+            let mut insert_pos = 0;
             for c in node.children() {
-                subnodes.push(build_diff_node(c, changed_nodes, kind));
+                subnodes.push(build_diff_node(c, changed_nodes, kind, None));
+                if c.range().end > insert_pos {
+                    insert_pos = c.range().end;
+                }
             }
             for n in inserted_nodes {
-                subnodes.push(build_diff_node(n, changed_nodes, DiffNodeKind::AddedNode));
+                if n.is_attribute() {
+                    insert_pos = node.range().start;
+                }
+                subnodes.push(build_diff_node(
+                    n,
+                    changed_nodes,
+                    DiffNodeKind::AddedNode,
+                    Some(insert_pos),
+                ));
             }
             return DiffNode {
                 name,
@@ -252,6 +385,8 @@ fn build_diff_node(
                 range2: None,
                 kind,
                 children: subnodes,
+                insert_pos: None,
+                is_attribute: node.is_attribute(),
             };
         }
     }
@@ -268,7 +403,7 @@ fn build_diff_node(
     };
     let mut children = Vec::new();
     for c in node.children() {
-        children.push(build_diff_node(c, changed_nodes, subnode_kind))
+        children.push(build_diff_node(c, changed_nodes, subnode_kind, None))
     }
     DiffNode {
         name,
@@ -276,5 +411,7 @@ fn build_diff_node(
         range2,
         kind,
         children,
+        insert_pos,
+        is_attribute: node.is_attribute(),
     }
 }
