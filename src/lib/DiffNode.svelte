@@ -28,6 +28,9 @@
             set_range2(value.range2());
         }}>Locate</button>
         {/if}
+        {#if value.kind() === xdiffer.DiffNodeKind.UpdatedNode || value.kind() === xdiffer.DiffNodeKind.DeletedNode || value.kind() === xdiffer.DiffNodeKind.AddedNode}
+        <button>Apply</button>
+        {/if}
         <!-- <button>Apply</button></span> -->
         <ul>
             {#each value.children() as child (child)}
