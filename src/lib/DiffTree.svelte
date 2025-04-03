@@ -4,8 +4,10 @@
 
     interface Props {
         tree?: xdiffer.DiffTree;
+        set_range1: (range: xdiffer.Range | undefined) => void;
+        set_range2: (range: xdiffer.Range | undefined) => void;
     }
-    let {tree}: Props = $props();
+    let {tree, set_range1, set_range2}: Props = $props();
 </script>
 
 {#if !tree}
@@ -15,5 +17,5 @@
 {:else if tree.kind() === xdiffer.DiffTreeKind.TotalDiff}
 <div>Root nodes are different</div>
 {:else}
-<DiffNode value={tree.root()!} />
+<DiffNode value={tree.root()!} set_range1={set_range1} set_range2={set_range2} />
 {/if}

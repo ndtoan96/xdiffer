@@ -101,6 +101,53 @@ impl DiffNode {
 }
 
 #[wasm_bindgen]
+pub struct SplittedText {
+    head: String,
+    middle: String,
+    tail: String,
+}
+
+#[wasm_bindgen]
+impl SplittedText {
+    #[wasm_bindgen]
+    pub fn head(&self) -> String {
+        self.head.clone()
+    }
+
+    #[wasm_bindgen]
+    pub fn middle(&self) -> String {
+        self.middle.clone()
+    }
+
+    #[wasm_bindgen]
+    pub fn tail(&self) -> String {
+        self.tail.clone()
+    }
+}
+
+#[wasm_bindgen]
+pub fn split_by_range(text: &str, range: Option<Range>) -> SplittedText {
+    if let Some(r) = range {
+        let start = r.start;
+        let end = r.end;
+        let head = &text[0..start];
+        let middle = &text[start..end];
+        let tail = &text[end..text.len()];
+        SplittedText {
+            head: head.to_string(),
+            middle: middle.to_string(),
+            tail: tail.to_string(),
+        }
+    } else {
+        SplittedText {
+            head: text.to_string(),
+            middle: "".to_string(),
+            tail: "".to_string(),
+        }
+    }
+}
+
+#[wasm_bindgen]
 pub fn build_diff_tree(xml1: &str, xml2: &str) -> Result<DiffTree, String> {
     let tree1 = XTree::parse(&xml1).map_err(|e| format!("Cannot parse tree1. {e:?}"))?;
     let tree2 = XTree::parse(&xml2).map_err(|e| format!("Cannot parse tree2. {e:?}"))?;
