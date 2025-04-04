@@ -1,6 +1,6 @@
 <script lang="ts">
     import * as xdiffer from "libxdiffer";
-    import {STATE_EDIT, STATE_COMPARE} from './shared.svelte';
+    import {STATE_EDIT} from './shared.svelte';
 
     let { name, value = $bindable(), stateMachine, range = undefined } = $props();
     const uid = $props.id();
@@ -21,7 +21,7 @@
     <div><label for="{uid}-xml">{name}</label></div>
     {#if stateMachine===STATE_EDIT}
         <textarea class="xml-text" {name} id="{uid}-xml" bind:value></textarea>
-    {:else if stateMachine === STATE_COMPARE}
+    {:else}
         <div class="xml-text">
             <pre><code>{splittedText.head()}</code><code bind:this={highlightElement} class="highlight-text"
                     >{splittedText.middle()}</code

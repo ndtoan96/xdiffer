@@ -9,8 +9,12 @@
         set_range2: (range: xdiffer.Range | undefined) => void;
     }
 
+    function deriveKey(v: xdiffer.DiffNode): string {
+        return `${value.range1()}|${value.range2()}`;
+    } 
+    
     let { value, set_range1, set_range2 }: Props = $props();
-    let applied = $state(false);
+    let applied = $derived(appliedEdits.has(deriveKey(value)));
     const nodeKindMap = {
         [xdiffer.DiffNodeKind.AddedNode]: "added-node",
         [xdiffer.DiffNodeKind.AddedSubNode]: "added-subnode",
@@ -37,13 +41,12 @@
             >
             <button
                 onclick={() => {
+                    const key = deriveKey(value);
                     if (applied) {
-                        appliedEdits.delete(
-                            `${value.range1()}|${value.range2()}`,
-                        );
+                        appliedEdits.delete(key);
                     } else {
                         appliedEdits.set(
-                            `${value.range1()}|${value.range2()}`,
+                            key,
                             new xdiffer.Change(
                                 value.range1(),
                                 value.range2(),
@@ -52,7 +55,6 @@
                             ),
                         );
                     }
-                    applied = !applied;
                 }}
                 >{#if applied}Revert{:else}Apply{/if}</button
             >
