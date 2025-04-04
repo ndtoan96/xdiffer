@@ -11,7 +11,7 @@
             highlightElement?.scrollIntoView({
                 behavior: "instant",
                 block: "center",
-                inline: "nearest",
+                inline: "center",
             });
         }
     });
@@ -35,9 +35,13 @@
         font-weight: bold;
     }
 
-    .xml-text {
+    .pane-container {
         width: 30vw;
-        height: 80vh;
+        height: 100%;
+    }
+
+    .xml-text {
+        height: 100%;
         overflow: scroll;
     }
 
@@ -52,5 +56,6 @@
         resize: none;
         font-family: monospace;
         font-size: 14px;
+        white-space: nowrap;
     }
 </style>

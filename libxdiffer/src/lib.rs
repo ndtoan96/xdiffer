@@ -19,6 +19,7 @@ extern "C" {
 pub struct DiffTree {
     kind: DiffTreeKind,
     root: Option<DiffNode>,
+    diff_count: usize,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -78,6 +79,11 @@ impl DiffTree {
     #[wasm_bindgen]
     pub fn root(&self) -> Option<DiffNode> {
         self.root.clone()
+    }
+
+    #[wasm_bindgen]
+    pub fn diff_count(&self) -> usize {
+        self.diff_count
     }
 }
 
@@ -270,14 +276,17 @@ pub fn build_diff_tree(xml1: &str, xml2: &str) -> Result<DiffTree, String> {
         return Ok(DiffTree {
             kind: DiffTreeKind::Same,
             root: None,
+            diff_count: 0,
         });
     }
     if matches!(edits[0], Edit::ReplaceRoot) {
         return Ok(DiffTree {
             kind: DiffTreeKind::TotalDiff,
             root: None,
+            diff_count: 1,
         });
     }
+    let diff_count = edits.len();
     let mut changed_nodes = HashMap::new();
     for e in edits {
         let key = match e {
@@ -299,6 +308,7 @@ pub fn build_diff_tree(xml1: &str, xml2: &str) -> Result<DiffTree, String> {
             DiffNodeKind::NoDiff,
             None,
         )),
+        diff_count,
     })
 }
 

@@ -1,6 +1,9 @@
 <script lang="ts">
     import * as xdiffer from 'libxdiffer';
     import DiffNode from './DiffNode.svelte';
+    import { setCurrentDiffNode } from './shared.svelte';
+
+    setCurrentDiffNode(undefined);
 
     interface Props {
         tree?: xdiffer.DiffTree;
@@ -12,13 +15,20 @@
 </script>
 
 {#if !tree}
-<div id={id}></div>
+<div class="container" id={id}></div>
 {:else if tree.kind() === xdiffer.DiffTreeKind.Same}
-<div id={id}>No difference</div>
+<div class="container" id={id}>No difference</div>
 {:else if tree.kind() === xdiffer.DiffTreeKind.TotalDiff}
-<div id={id}>Root nodes are different</div>
+<div class="container" id={id}>Root nodes are different</div>
 {:else}
-<div id={id}>
+<div class="container" id={id}>
     <DiffNode value={tree.root()!} set_range1={set_range1} set_range2={set_range2} />
 </div>
 {/if}
+
+<style>
+   .container {
+    height: 100%;
+    overflow: scroll;
+   } 
+</style>
