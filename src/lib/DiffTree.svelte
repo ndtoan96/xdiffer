@@ -6,16 +6,19 @@
         tree?: xdiffer.DiffTree;
         set_range1: (range: xdiffer.Range | undefined) => void;
         set_range2: (range: xdiffer.Range | undefined) => void;
+        id: string;
     }
-    let {tree, set_range1, set_range2}: Props = $props();
+    let {tree, set_range1, set_range2, id}: Props = $props();
 </script>
 
 {#if !tree}
-<div></div>
+<div id={id}></div>
 {:else if tree.kind() === xdiffer.DiffTreeKind.Same}
-<div>No difference</div>
+<div id={id}>No difference</div>
 {:else if tree.kind() === xdiffer.DiffTreeKind.TotalDiff}
-<div>Root nodes are different</div>
+<div id={id}>Root nodes are different</div>
 {:else}
-<DiffNode value={tree.root()!} set_range1={set_range1} set_range2={set_range2} />
+<div id={id}>
+    <DiffNode value={tree.root()!} set_range1={set_range1} set_range2={set_range2} />
+</div>
 {/if}
