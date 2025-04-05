@@ -2,7 +2,7 @@ name: pubish
 
 on:
   push:
-    branches: ["publish"]
+    branches: ["main"]
   
   workflow_dispatch:
 
