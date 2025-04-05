@@ -10,4 +10,5 @@ export default defineConfig({
     wasm(),
     topLevelAwait(),
   ],
+  base: "./",
 })
