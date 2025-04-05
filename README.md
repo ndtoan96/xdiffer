@@ -11,4 +11,4 @@
 The tool is deployed as a web app at: https://ndtoan96.github.io/xdiffer/
 
 ## Why is it a web app?
-Because I cannot find a suitable GUI framework for my need (especially treeview and file drop), mostly due to skill issue though. I plan to make a desktop version eventually but for now I settle with web app.
+Because I cannot find a suitable GUI framework for my need (especially treeview and file drop), mostly due to skill issue though. Plus, I want to try working with web assembly. I plan to make a desktop version eventually but for now I settle with web app.
