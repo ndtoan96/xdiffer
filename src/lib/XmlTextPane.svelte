@@ -15,12 +15,34 @@
             });
         }
     });
+
+    function onFileDrop(e: DragEvent) {
+        e.preventDefault();
+        const file = e.dataTransfer?.files.item(0);
+        if (file) {
+            const reader = new FileReader();
+            reader.readAsText(file, "utf-8");
+            reader.onloadend = () => {
+                value = reader.result;
+            };
+        }
+    }
 </script>
 
 <div class="pane-container">
     <div><label for="{uid}-xml">{name}</label></div>
     {#if stateMachine===STATE_EDIT}
-        <textarea class="xml-text" {name} id="{uid}-xml" bind:value></textarea>
+        <textarea class="xml-text" {name} id="{uid}-xml" bind:value ondragover={(e) => e.preventDefault()} ondrop={onFileDrop}></textarea>
+        <div><label for="{uid}-input-file" class="upload-label">Drop file above or click here to upload</label><input type="file" name="{uid}-input-file" id="{uid}-input-file" hidden onchange={(e) => {
+            const file = e.currentTarget.files?.item(0);
+            if (file) {
+                const reader = new FileReader();
+                reader.readAsText(file, "utf-8");
+                reader.onloadend = () => {
+                    value = reader.result;
+                };
+            }
+        }}></div>
     {:else}
         <div class="xml-text">
             <pre><code>{splittedText.head()}</code><code bind:this={highlightElement} class="highlight-text"
@@ -57,5 +79,16 @@
         font-family: monospace;
         font-size: 14px;
         white-space: nowrap;
+    }
+
+    .upload-label {
+        cursor: pointer;
+        background-color: #f0f0f0;
+        border: 1px solid #ccc;
+        padding: 8px 12px;
+        border-radius: 4px;
+        display: inline-block;
+        font-size: 14px;
+        color: #333;
     }
 </style>
