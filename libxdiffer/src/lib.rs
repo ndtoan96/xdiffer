@@ -7,13 +7,6 @@ use x_diff_rs::{
     tree::{XNode, XTree},
 };
 
-#[cfg(debug_assertions)]
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(js_namespace = console)]
-    fn log(text: &str);
-}
-
 #[derive(Debug, Clone)]
 #[wasm_bindgen]
 pub struct DiffTree {
@@ -30,6 +23,13 @@ pub enum DiffTreeKind {
     PartialDiff,
 }
 
+#[derive(Debug, Clone, Copy)]
+enum NodeType {
+    Element,
+    Attribute,
+    Text,
+}
+
 #[derive(Debug, Clone)]
 #[wasm_bindgen]
 pub struct DiffNode {
@@ -39,7 +39,7 @@ pub struct DiffNode {
     kind: DiffNodeKind,
     insert_pos: Option<usize>,
     children: Vec<DiffNode>,
-    is_attribute: bool,
+    node_type: NodeType,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -121,7 +121,17 @@ impl DiffNode {
 
     #[wasm_bindgen]
     pub fn is_attribute(&self) -> bool {
-        self.is_attribute
+        matches!(self.node_type, NodeType::Attribute)
+    }
+
+    #[wasm_bindgen]
+    pub fn is_element(&self) -> bool {
+        matches!(self.node_type, NodeType::Element)
+    }
+
+    #[wasm_bindgen]
+    pub fn is_text(&self) -> bool {
+        matches!(self.node_type, NodeType::Text)
     }
 }
 
@@ -318,10 +328,10 @@ fn build_diff_node(
     kind: DiffNodeKind,
     insert_pos: Option<usize>,
 ) -> DiffNode {
-    let name = match node.name() {
-        x_diff_rs::tree::XNodeName::TagName(expanded_name) => format!("<{}>", expanded_name.name()),
-        x_diff_rs::tree::XNodeName::AttributeName(attribute) => format!("[{}]", attribute.name()),
-        x_diff_rs::tree::XNodeName::Text => "TEXT".to_string(),
+    let (name, node_type) = match node.name() {
+        x_diff_rs::tree::XNodeName::TagName(expanded_name) => (expanded_name.name().to_string(), NodeType::Element),
+        x_diff_rs::tree::XNodeName::AttributeName(attribute) => (attribute.name().to_string(), NodeType::Attribute),
+        x_diff_rs::tree::XNodeName::Text => ("TEXT".to_string(), NodeType::Text),
     };
     if let Some(edits) = changed_nodes.get(&node.id().to_string()) {
         // If the node is added (i.e it is in tree2) then even if its id exists in changed_nodes, that's just coincidence
@@ -353,7 +363,7 @@ fn build_diff_node(
                             kind: DiffNodeKind::DeletedNode,
                             insert_pos: None,
                             children: subnodes,
-                            is_attribute: xnode.is_attribute(),
+                            node_type,
                         };
                     }
                     Edit::Update { old, new } => {
@@ -364,7 +374,7 @@ fn build_diff_node(
                             kind: DiffNodeKind::UpdatedNode,
                             insert_pos: None,
                             children: Vec::new(),
-                            is_attribute: old.is_attribute(),
+                            node_type,
                         };
                     }
                     Edit::ReplaceRoot => unreachable!(),
@@ -396,7 +406,7 @@ fn build_diff_node(
                 kind,
                 children: subnodes,
                 insert_pos: None,
-                is_attribute: node.is_attribute(),
+                node_type,
             };
         }
     }
@@ -422,6 +432,6 @@ fn build_diff_node(
         kind,
         children,
         insert_pos,
-        is_attribute: node.is_attribute(),
+        node_type,
     }
 }

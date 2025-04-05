@@ -13,6 +13,7 @@
   let xml1 = $state("");
   let xml2 = $state("");
   let mergedXml = $state("");
+  let errorMsg = $state("");
   let range1: xdiffer.Range | undefined = $state(undefined);
   let range2: xdiffer.Range | undefined = $state(undefined);
   let stateMachine = $state(STATE_EDIT);
@@ -44,8 +45,9 @@
     try {
       diffTree = xdiffer.build_diff_tree(xml1, xml2);
       stateMachine = STATE_COMPARE;
+      errorMsg = "";
     } catch (e) {
-      alert(e);
+      errorMsg = `${e}`;
     }
   }
 
@@ -136,6 +138,7 @@
       <button class="btn save-btn" onclick={onSaveBtnClick}>Save</button>
     {/if}
   </div>
+  <div style:color="red">{errorMsg}</div>
   <div class="central-container">
     <div class="xml1">
       <XmlTextPane

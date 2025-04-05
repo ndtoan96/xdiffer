@@ -11,8 +11,8 @@
 
     function deriveKey(v: xdiffer.DiffNode): string {
         return `${value.range1()}|${value.range2()}`;
-    } 
-    
+    }
+
     let { value, set_range1, set_range2 }: Props = $props();
     let applied = $derived(appliedEdits.has(deriveKey(value)));
     const nodeKindMap = {
@@ -30,109 +30,114 @@
         set_range2(value.range2());
     }
 </script>
-
-<div class="tree">
-    <div class="tree-node">
-        {#if value.kind() === xdiffer.DiffNodeKind.UpdatedNode || value.kind() === xdiffer.DiffNodeKind.DeletedNode || value.kind() === xdiffer.DiffNodeKind.AddedNode}
-            <a
-                href="/"
-                class={[nodeKindMap[value.kind()], "diff-node"]}
-                onclick={onChangedNodeClick}><b>{value.name()}</b></a
-            >
-            <button
-                onclick={() => {
-                    const key = deriveKey(value);
-                    if (applied) {
-                        appliedEdits.delete(key);
-                    } else {
-                        appliedEdits.set(
-                            key,
-                            new xdiffer.Change(
-                                value.range1(),
-                                value.range2(),
-                                value.insert_pos(),
-                                value.is_attribute(),
-                            ),
-                        );
-                    }
-                }}
-                >{#if applied}Revert{:else}Apply{/if}</button
-            >
-        {:else}
-            <span class={nodeKindMap[value.kind()]}><b>{value.name()}</b></span>
-        {/if}
-        <!-- <button>Apply</button></span> -->
-        <ul>
-            {#each value.children() as child (child)}
-                <li>
-                    <Self value={child} {set_range1} {set_range2} />
-                </li>
-            {/each}
-        </ul>
-    </div>
+<div class="node">
+    <div class="hline"></div>
+{#if value.kind() === xdiffer.DiffNodeKind.UpdatedNode || value.kind() === xdiffer.DiffNodeKind.DeletedNode || value.kind() === xdiffer.DiffNodeKind.AddedNode}
+    <a
+        href="/"
+        class={{
+            [nodeKindMap[value.kind()]]: true,
+            "diff-node": true,
+            "attribute-node": value.is_attribute(),
+            "element-node": value.is_element(),
+            "text-node": value.is_text(),
+        }}
+        onclick={onChangedNodeClick}>{value.name()}</a
+    >
+    <button
+        onclick={() => {
+            const key = deriveKey(value);
+            if (applied) {
+                appliedEdits.delete(key);
+            } else {
+                appliedEdits.set(
+                    key,
+                    new xdiffer.Change(
+                        value.range1(),
+                        value.range2(),
+                        value.insert_pos(),
+                        value.is_attribute(),
+                    ),
+                );
+            }
+        }}
+        >{#if applied}Revert{:else}Apply{/if}</button
+    >
+{:else}
+    <span
+        class={{
+            [nodeKindMap[value.kind()]]: true,
+            "attribute-node": value.is_attribute(),
+            "element-node": value.is_element(),
+            "text-node": value.is_text(),
+        }}>{value.name()}</span
+    >
+{/if}
 </div>
+<!-- <button>Apply</button></span> -->
+<ul>
+    {#each value.children() as child (child)}
+        <li>
+            <Self value={child} {set_range1} {set_range2} />
+        </li>
+    {/each}
+</ul>
 
 <style>
-    /* Tree container styling */
-    .tree {
-        font-family: Arial, sans-serif;
-        font-size: 14px;
-        line-height: 1.5;
-        height: 100%;
+    a,
+    span {
+        white-space: nowrap;
     }
 
-    /* Tree node styling */
-    .tree-node {
-        margin-left: 20px;
+    ul {
+        list-style: none;
+        margin-top: 0px;
+        padding-top: 0.3rem;
     }
 
-    /* Styling for the unordered list to create tree branches */
-    .tree-node ul {
-        list-style-type: none;
-        padding-left: 20px;
-        border-left: 1px solid #ccc;
-        margin: 5px 0;
+    li {
+        width: max-content;
+        border-left: 1px solid rgb(172, 172, 236);
     }
 
-    /* Styling for each list item */
-    .tree-node li {
-        margin: 5px 0;
-        padding-left: 10px;
-        position: relative;
+    .node {
+        display: flex;
     }
 
-    /* Connector line for child nodes */
-    .tree-node li::before {
-        content: "";
-        position: absolute;
-        left: -10px;
-        top: 10px;
-        width: 10px;
+    .hline {
+        width: 1rem;
         height: 1px;
-        background-color: #ccc;
+        margin-top: 0.5rem;
+        background-color: rgb(172, 172, 236);
     }
 
     /* Styling for different node types */
+    .element-node {
+        font-weight: bold;
+        color: #3a2f73;
+    }
+
+    .attribute-node {
+        font-weight: 200;
+        color: #0eca1a;
+    }
+
+    .text-node {
+        font-style: italic;
+    }
+
     .added-node,
     .added-subnode {
-        color: green;
-        font-weight: bold;
+        background-color: yellow;
     }
 
     .deleted-node,
     .deleted-subnode {
-        color: red;
-        font-weight: bold;
+        background-color: yellow;
+        opacity: 0.3;
     }
 
     .updated-node {
         background-color: yellow;
-        padding: 2px 4px;
-        border-radius: 4px;
-    }
-
-    .nodiff {
-        color: gray;
-        font-style: italic;
     }
 </style>
