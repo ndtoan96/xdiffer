@@ -9,9 +9,10 @@
     STATE_PREVIEW,
   } from "./lib/shared.svelte";
   import { getCurrentDiffNode, setCurrentDiffNode } from "./lib/shared.svelte";
+  import { demoXml1, demoXml2 } from "./lib/demo";
 
-  let xml1 = $state("");
-  let xml2 = $state("");
+  let xml1 = $state(demoXml1);
+  let xml2 = $state(demoXml2);
   let mergedXml = $state("");
   let errorMsg = $state("");
   let range1: xdiffer.Range | undefined = $state(undefined);
