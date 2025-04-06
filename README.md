@@ -20,7 +20,7 @@ It may be confusing at first working with the diff tree. But it's pretty simple.
 - the node only exists in XML 2
 - the node exists in both XML 1 and XML 2 but has different value
 
-The button next to the node show its state after merging:
+The button next to the node show its state after merging, clicking the button allows you to change its state:
 - XML1: include value from XML 1 in the merged XML
 - XML2: include value from XML 2 in the merged XML
 - None: remove it from the merged XML
