@@ -10,7 +10,7 @@
     }
 
     function deriveKey(v: xdiffer.DiffNode): string {
-        return `${value.range1()}|${value.range2()}`;
+        return `${value.range1()?.start}|${value.range1()?.end}|${value.range2()?.start}|${value.range2()?.end}`;
     }
 
     let { value, set_range1, set_range2 }: Props = $props();
