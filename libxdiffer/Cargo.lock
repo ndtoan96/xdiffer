@@ -147,9 +147,9 @@ dependencies = [
 
 [[package]]
 name = "x-diff-rs"
-version = "0.4.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4daf20d525412f42f71a57ae94cdedd2233173df728a0517e90dd0c03d8acac7"
+checksum = "ffca456f1791c1f0b88f10565d0674908ef06385df7e81bfccc08bf1d5d89ddf"
 dependencies = [
  "md5",
  "roxmltree",
